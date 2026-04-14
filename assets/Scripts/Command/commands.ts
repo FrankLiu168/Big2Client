@@ -10,15 +10,61 @@ enum CommandAction {
   OnCmdServerNewRound = 205,
 
   OnCmdClientPlayerAction = 301,
-  OnCmdClientReady = 302,
+
+  OnCmdServerRoomInfo = 401,
+  OnCmdServerToStart = 402,
+  OnCmdServerEnterFail = 403,
+
+  OnCmdClientEnterRoom = 501,
+  OnCmdClientReady = 502,
+  OnCmdClientCancel = 503
 }
 
+interface PlayerData {
+  identifier : string;
+  playerID: number;
+  playerName : string;
+  isReady: boolean;
+
+}
 
 interface BasePayload {
   commandAction: CommandAction;   // json: "command"
+  commandSubAction : number;
   target: string;           // json: "target"
   data: string;             // json: "data"
 }
+
+interface CmdClientReady {
+  roomID: number;
+  playerID: number;         // json: "playerID"
+
+}
+
+interface CmdClientCancel {
+  roomID : number;
+  playerID: number;         // json: "playerID"
+
+}
+
+interface CmdClientEnterRoom {
+  identifier: string;
+  roomID : number;
+}
+
+interface CmdServerRoomInfo {
+  players: PlayerData[]
+}
+
+interface CmdServerToStart {
+  gameID: string
+}
+
+interface CmdServerEnterFail {
+  failID : number
+}
+
+
 
 
 
@@ -27,10 +73,8 @@ interface CmdServerNewRound {
   takeTime: number;         // json: "takeTime"
 }
 
-interface CmdClientReady {
-  playerID: number;         // json: "playerID"
-  replyID: string;          // json: "replyID"
-}
+
+
 
 interface CmdServerDealCards {
   cards: number[];          // json: "cards"
@@ -68,9 +112,19 @@ interface CmdServerGameOver {
 export { CommandAction }; 
 
 export type {
+  PlayerData,
+
   BasePayload,
-  CmdServerNewRound,
+
+  CmdClientEnterRoom,
+  CmdClientCancel,
   CmdClientReady,
+
+  CmdServerEnterFail,
+  CmdServerRoomInfo,
+  CmdServerToStart,
+
+  CmdServerNewRound,
   CmdServerDealCards,
   CmdServerCurrentPlayer,
   CmdClientPlayerAction,

@@ -1,0 +1,15 @@
+{
+  "__version__": "1.0.1",
+  "builder": {
+    "common": {
+      "scenes": [
+        {
+          "url": "db://assets/Scenes/game.scene",
+          "uuid": "7e642b3a-2348-4f32-be81-3096135a2d05",
+          "inBundle": false
+        }
+      ],
+      "startScene": "4a2ac91f-cea1-4ceb-8384-2c54310cf76a"
+    }
+  }
+}

@@ -47,7 +47,7 @@ export class GameScene extends Component {
     private _userPanelMap = new Map<string, UserPanel1 | UserPanel2>();
     private _startX = 500
     private _startY = 350
-    private wsClient: WebSocketClient = null;
+    //private wsClient: WebSocketClient = null;
     private replyID : string = ""
     private tableCom : Table = null;
     private seatMap = new Map<number,string>()
@@ -71,8 +71,8 @@ export class GameScene extends Component {
             handCards: [],
         };
         //this.dispatchAction()
-        this.startWebsocket();
-        EventGo.on("server-message",(cmd : Commands.BasePayload)=>{
+        //this.startWebsocket();
+        EventGo.on("server-message-game",(cmd : Commands.BasePayload)=>{
             this.onAction(cmd);
         });
     }
@@ -100,10 +100,10 @@ export class GameScene extends Component {
 
     }
 
-    works(type: string) {
-        this._userPanelMap.get(type).setScene(this);
-        this._userPanelMap.get(type).setCards([101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113])
-    }
+    // works(type: string) {
+    //     this._userPanelMap.get(type).setScene(this);
+    //     this._userPanelMap.get(type).setCards([101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113])
+    // }
 
     async dispatchAction(cards : number[]) {
         const orders = ["A", "B", "C", "D"]
@@ -209,16 +209,17 @@ export class GameScene extends Component {
 
     onClick(cmd: string) {
         if (cmd == "start") {
-            const payload : Commands.CmdClientReady = {
-                playerID: 1,
-                replyID: "12345"
-            }
-            const basePayload : Commands.BasePayload = {
-                commandAction: Commands.CommandAction.OnCmdClientReady,
-                data: JSON.stringify(payload),
-                target: ""
-            }
-            this.wsClient.send(basePayload)
+            // const payload : Commands.CmdClientReady = {
+            //     playerID: 1,
+            //     //replyID: "12345"
+            // }
+            // const basePayload : Commands.BasePayload = {
+            //     commandAction: Commands.CommandAction.OnCmdClientReady,
+            //     commandSubAction: 0,
+            //     data: JSON.stringify(payload),
+            //     target: ""
+            // }
+            // EventGo.emit("client-message",basePayload)
         }
         if (cmd == "send") {
             const isPass = false;
@@ -247,11 +248,12 @@ export class GameScene extends Component {
             }
             const basePayload : Commands.BasePayload = {
                 commandAction: Commands.CommandAction.OnCmdClientPlayerAction,
+                commandSubAction:0,
                 target: "",
                 data: JSON.stringify(payload),
             }
             this.replyID = ""
-            this.wsClient.send(basePayload);
+            EventGo.emit("client-message",basePayload)
         }
         if (cmd == "pass") {;
             const payload : Commands.CmdClientPlayerAction = {
@@ -264,11 +266,12 @@ export class GameScene extends Component {
             }
             const basePayload : Commands.BasePayload = {
                 commandAction: Commands.CommandAction.OnCmdClientPlayerAction,
+                commandSubAction: 0,
                 target: "",
                 data: JSON.stringify(payload),
             }
             this.replyID = ""
-            this.wsClient.send(basePayload);
+            EventGo.emit("client-message",basePayload)
         }
         // const textes = ["A", "B", "C", "D"]
         // const text = textes[this._test % 4]
@@ -320,32 +323,32 @@ export class GameScene extends Component {
 
     }
 
-    public startWebsocket() {
-        // 建立實例
-        this.wsClient = new WebSocketClient('ws://127.0.0.1:8080/ws');
+    // public startWebsocket() {
+    //     // 建立實例
+    //     this.wsClient = new WebSocketClient('ws://127.0.0.1:8080/ws');
 
-        // 設定回調
-        this.wsClient.onOpen = () => {
-            console.log('連線成功！');
-            //wsClient.send({ cmd: 'login', playerId: 1001 });
-        };
+    //     // 設定回調
+    //     this.wsClient.onOpen = () => {
+    //         console.log('連線成功！');
+    //         //wsClient.send({ cmd: 'login', playerId: 1001 });
+    //     };
 
-        this.wsClient.onMessage = (data) => {
-            console.log('收到伺服器訊息:', data);
-            EventGo.emit("server-message",data)
-            // 處理你的遊戲協議
-        };
+    //     this.wsClient.onMessage = (data) => {
+    //         console.log('收到伺服器訊息:', data);
+    //         EventGo.emit("server-message",data)
+    //         // 處理你的遊戲協議
+    //     };
 
-        this.wsClient.onError = (err) => {
-            console.error('WebSocket 錯誤:', err);
-        };
+    //     this.wsClient.onError = (err) => {
+    //         console.error('WebSocket 錯誤:', err);
+    //     };
 
-        this.wsClient.onClose = (code, reason) => {
-            console.log(`連線關閉: ${code} - ${reason}`);
-        };
+    //     this.wsClient.onClose = (code, reason) => {
+    //         console.log(`連線關閉: ${code} - ${reason}`);
+    //     };
 
-        // 發起連線
-        this.wsClient.connect();
+    //     // 發起連線
+    //     this.wsClient.connect();
 
-    }
+    // }
 }
