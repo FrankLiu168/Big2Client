@@ -62,7 +62,7 @@ export class WebSocketClient {
         }
     }
 
-    send(data: Commands.BasePayload): void {
+    send(data: Commands.ClientBasePayload): void {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
             console.warn('WebSocket 未連線，無法發送資料');
             return;

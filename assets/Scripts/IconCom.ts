@@ -1,4 +1,4 @@
-import { Label, _decorator, Component, Node } from 'cc';
+import { log,Label, _decorator, Component, Node } from 'cc';
 const { ccclass, property } = _decorator;
 
 @ccclass('IconCom')
@@ -14,7 +14,9 @@ export class IconCom extends Component {
 
     private playerMap = new Map<string, Node>()
     private countdownMap = new Map<string, boolean>()
-    start() {
+
+
+    onLoad() {
         this.playerMap.set('A', this.playerA);
         this.playerMap.set('B', this.playerB);
         this.playerMap.set('C', this.playerC);
@@ -24,6 +26,17 @@ export class IconCom extends Component {
         this.countdownMap.set('B', false);
         this.countdownMap.set('C', false);
         this.countdownMap.set('D', false);
+    }
+
+    public setName(seat : string,name : string) {
+        log("seat",seat)
+        const playerNode = this.playerMap.get(seat);
+        log(this.playerMap)
+        log(playerNode)
+        const bgNode = playerNode.getChildByName("Bg") 
+        const nameNode = bgNode.getChildByName("Name")
+        const nameLabel = nameNode.getComponent(Label);
+        nameLabel.string = name;
     }
 
     showTimer(seat: string, seconds: number) {

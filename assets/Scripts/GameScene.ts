@@ -9,6 +9,7 @@ import { WebSocketClient } from './WebSocketClient';
 import { EventGo } from './EventGo';
 import { PlayerInfo,PlayerAction,PlayerActionCheck } from './Logic/ActionCheck';
 import {  getCardType , CardType} from './Logic/CheckCardType';
+import { NetworkManager } from './NetworkManager';
 // 工具函数：将 callback API 转为 Promise
 function loadDirAsPromise<T extends Asset>(path: string, type?: new () => T): Promise<T[]> {
     return new Promise((resolve, reject) => {
@@ -72,9 +73,12 @@ export class GameScene extends Component {
         };
         //this.dispatchAction()
         //this.startWebsocket();
+        log("NetworkManager",NetworkManager.instance == null)
         EventGo.on("server-message-game",(cmd : Commands.BasePayload)=>{
+            log("server-message-game received")
             this.onAction(cmd);
         });
+        this.onClick("start")
     }
 
     initMap() {
@@ -100,10 +104,6 @@ export class GameScene extends Component {
 
     }
 
-    // works(type: string) {
-    //     this._userPanelMap.get(type).setScene(this);
-    //     this._userPanelMap.get(type).setCards([101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113])
-    // }
 
     async dispatchAction(cards : number[]) {
         const orders = ["A", "B", "C", "D"]
@@ -154,6 +154,15 @@ export class GameScene extends Component {
         log("call onAction")
         if (basePayload.commandAction == Commands.CommandAction.OnCmdServerDealCards) {
             const payload = JSON.parse(basePayload.data) as Commands.CmdServerDealCards;
+            log("xx",payload.players)
+            for(const p of payload.players) {
+                if (p.identifier == "") {
+                    continue
+                }
+                const seat = this.seatMap.get(p.playerID)
+                //log("p",p.playerID,seat)
+                this.iconCom.setName(seat,p.playerName)
+            }
             await this.dispatchAction(payload.cards)
         }
         if (basePayload.commandAction == Commands.CommandAction.OnCmdServerNewRound) {
@@ -203,23 +212,32 @@ export class GameScene extends Component {
             }
         }
         if (basePayload.commandAction == Commands.CommandAction.OnCmdServerGameOver) {
-            this.tableCom.setGameOver(true)
+            let items = []
+            const payload = JSON.parse(basePayload.data) as Commands.CmdServerGameOver
+            const status = payload.status;
+                Object.keys(status).forEach(key => {
+                const value = status[key as keyof typeof status];
+                items.push(key + " 手牌數 " + value )
+            });
+            const overText = items.join("\n")
+            this.tableCom.setGameOver(overText,true)
+            setTimeout(() => {
+                this.onLeave
+            }, 10000);
         }
     }
 
     onClick(cmd: string) {
         if (cmd == "start") {
-            // const payload : Commands.CmdClientReady = {
-            //     playerID: 1,
-            //     //replyID: "12345"
-            // }
-            // const basePayload : Commands.BasePayload = {
-            //     commandAction: Commands.CommandAction.OnCmdClientReady,
-            //     commandSubAction: 0,
-            //     data: JSON.stringify(payload),
-            //     target: ""
-            // }
-            // EventGo.emit("client-message",basePayload)
+            const payload : Commands.CmdClientOnGame = {
+            }
+            const basePayload : Commands.ClientBasePayload = {
+                commandAction: Commands.CommandAction.OnCmdClientOnGame,
+                data: JSON.stringify(payload),
+                roomID: 0,
+                gameID: NetworkManager.instance.getGameID()
+            }
+            EventGo.emit("client-message",basePayload)
         }
         if (cmd == "send") {
             const isPass = false;
@@ -246,11 +264,11 @@ export class GameScene extends Component {
                 cards: action.cards,          // json: "cards"
                 reason: "",           // json: "reason"
             }
-            const basePayload : Commands.BasePayload = {
+            const basePayload : Commands.ClientBasePayload = {
                 commandAction: Commands.CommandAction.OnCmdClientPlayerAction,
-                commandSubAction:0,
-                target: "",
                 data: JSON.stringify(payload),
+                roomID: 0,
+                gameID: NetworkManager.instance.getGameID()
             }
             this.replyID = ""
             EventGo.emit("client-message",basePayload)
@@ -264,39 +282,16 @@ export class GameScene extends Component {
                 cards: [],          // json: "cards"
                 reason: "",           // json: "reason"
             }
-            const basePayload : Commands.BasePayload = {
+            const basePayload : Commands.ClientBasePayload = {
                 commandAction: Commands.CommandAction.OnCmdClientPlayerAction,
-                commandSubAction: 0,
-                target: "",
                 data: JSON.stringify(payload),
+                roomID : 0,
+                gameID  : NetworkManager.instance.getGameID()
             }
             this.replyID = ""
             EventGo.emit("client-message",basePayload)
         }
-        // const textes = ["A", "B", "C", "D"]
-        // const text = textes[this._test % 4]
-        // if (arg == "send") {
-
-        //     log("show  cards")
-        //     const p = this.tableNode.getComponent(Table)
-        //     //p.showCards("A",[101,102,103,104,105])
-        //     await p.showCards(text, [101, 102])
-        //     this._test++
-        //     //p.showCards("A",[101])
-        // }
-        // if (arg == "pass") {
-        //     log("ClickObj.onClick pass");
-        //     const p = this.IconNode.getComponent(IconCom)
-        //     p.showTimer(text, 15)
-        //     this._test++
-
-        // }
-        // if (arg == "test1") {
-        //     const p = this.tableNode.getComponent(Table)
-        //     p.showPass(text)
-        //     this._test++
-
-        // }
+      
     }
 
 
@@ -323,32 +318,8 @@ export class GameScene extends Component {
 
     }
 
-    // public startWebsocket() {
-    //     // 建立實例
-    //     this.wsClient = new WebSocketClient('ws://127.0.0.1:8080/ws');
+    onLeave() {
+        window.location.replace('/game-exit.html');
 
-    //     // 設定回調
-    //     this.wsClient.onOpen = () => {
-    //         console.log('連線成功！');
-    //         //wsClient.send({ cmd: 'login', playerId: 1001 });
-    //     };
-
-    //     this.wsClient.onMessage = (data) => {
-    //         console.log('收到伺服器訊息:', data);
-    //         EventGo.emit("server-message",data)
-    //         // 處理你的遊戲協議
-    //     };
-
-    //     this.wsClient.onError = (err) => {
-    //         console.error('WebSocket 錯誤:', err);
-    //     };
-
-    //     this.wsClient.onClose = (code, reason) => {
-    //         console.log(`連線關閉: ${code} - ${reason}`);
-    //     };
-
-    //     // 發起連線
-    //     this.wsClient.connect();
-
-    // }
+    }
 }

@@ -1,4 +1,4 @@
-import { _decorator, Component, Node,Button,Label } from 'cc';
+import { log,_decorator, Component, Node,Button,Label } from 'cc';
 const { ccclass, property } = _decorator;
 import * as Commands from './Command/commands';
 import { EventGo } from './EventGo';
@@ -18,7 +18,9 @@ export class WaitSeatCom extends Component {
 
     private player : Commands.PlayerData
     private roomID : number
-
+    public setRoomID(roomID : number) {
+        this.roomID = roomID;
+    }
     public setPlayer(isSelf : boolean,roomID : number,player : Commands.PlayerData)
     {
         this.player = player
@@ -26,13 +28,13 @@ export class WaitSeatCom extends Component {
         const cancelBtn = this.cancelButton.getComponent(Button)
         const nameLabel = this.nameNode.getComponent(Label)
         const statusLabel = this.statusNode.getComponent(Label)
-        readyBtn.enabled = false
-        cancelBtn.enabled = false
+        readyBtn.interactable = false
+        cancelBtn.interactable = false
         if(isSelf){
             if(player.isReady) {
-                cancelBtn.enabled = true
+                cancelBtn.interactable = true
             } else {
-                readyBtn.enabled = true
+                readyBtn.interactable = true
             }
         }
         nameLabel.string = player.playerName
@@ -40,35 +42,40 @@ export class WaitSeatCom extends Component {
     }
 
     onClickRead() {
+        log("cilck ready")
         const payload : Commands.CmdClientReady = {
             roomID : this.roomID,
             playerID : this.player.playerID
         }
-        const basePayload : Commands.BasePayload = {
+        const basePayload : Commands.ClientBasePayload = {
             commandAction: Commands.CommandAction.OnCmdClientReady,
-            commandSubAction: 1,
             data: JSON.stringify(payload),
-            target: ""
+            roomID : this.roomID,
+            gameID: ""
         }
-        EventGo.emit("server-message-room",basePayload)
+        EventGo.emit("client-message",basePayload)
     }
     onClickCancel() {   
+        log("cancel")
         const payload : Commands.CmdClientCancel = {
             roomID : this.roomID,
             playerID : this.player.playerID
         }
-        const basePayload : Commands.BasePayload = {
+        const basePayload : Commands.ClientBasePayload = {
             commandAction: Commands.CommandAction.OnCmdClientCancel,
-            commandSubAction: 1,
             data: JSON.stringify(payload),
-            target: ""
+            roomID : this.roomID,
+            gameID: ""
         }
-        EventGo.emit("server-message-room",basePayload)
+        EventGo.emit("client-message",basePayload)
     }
 
 
     start() {
-
+        const readyBtn = this.readyButton.getComponent(Button)
+        const cancelBtn = this.cancelButton.getComponent(Button)
+        readyBtn.interactable = false
+        cancelBtn.interactable = false
     }
 
     update(deltaTime: number) {

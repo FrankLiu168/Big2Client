@@ -1,4 +1,4 @@
-import { Vec3, Sprite, log, _decorator, Component, Node, Prefab, instantiate, tween } from 'cc';
+import { Vec3, Sprite, log, _decorator, Component, Node, Prefab, instantiate, tween, Label } from 'cc';
 const { ccclass, property } = _decorator;
 import { GameScene } from './GameScene';
 @ccclass('Table')
@@ -28,6 +28,7 @@ export class Table extends Component {
     private readonly validSeats = ['A', 'B', 'C', 'D'];
     private gameScene: GameScene = null!;
     private gameOverNode: Node = null;
+    private overText : Label = null!;
     onLoad() {
         this.node.active = false;
         log("pass-start")
@@ -39,6 +40,9 @@ export class Table extends Component {
 
         this.gameOverNode = this.onTable.getChildByName("GameOver")
         this.gameOverNode.active = false
+
+        const overStatus = this.gameOverNode.getChildByName("OverStatus")
+        this.overText = overStatus.getComponent(Label)
 
         for (let key of this.validSeats) {
             this.showHandMap.get(key)!.active = false
@@ -133,8 +137,9 @@ export class Table extends Component {
         return promise
     }
 
-    public setGameOver(status: boolean) {
+    public setGameOver(overStatus :string,status: boolean) {
         this.gameOverNode.active = status
+        this.overText.string = overStatus
     }
 
     // 可選：保留 update，但目前無需實現

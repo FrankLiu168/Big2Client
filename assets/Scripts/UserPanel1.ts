@@ -28,6 +28,7 @@ export class UserPanel1 extends Component {
     public setScene(scene: GameScene) {
         this.gameScene = scene;
     }
+
     public setCards(cards: number[]) {
         this.cards = cards;
         this.updateCards();

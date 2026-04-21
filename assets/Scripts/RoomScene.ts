@@ -22,19 +22,14 @@ export class RoomScene extends Component {
 
     private playerID: number;
     private identifier: string = "";
-    private roomID: number;
     private params: URLSearchParams = null;
-    private players: Commands.PlayerData[];
+    private players: Commands.PlayerData[] = [];
     onLoad() {
+        NetworkManager.Init()
         this.params = this.getQueryParams();
         //this.identifier = this.params.get("user");
         //this.roomID = parseInt(this.params.get("room"));
-        this.identifier = "user-1"
-        this.roomID = 1
-
-        const roomNameLabel = this.roomName.getComponent(Label)
-        roomNameLabel.string = "Room No [" + this.roomID + "]"
-        log("RoomScene.onLoad.1")
+        
         const waitSeatComA = this.waitSeatA.getComponent(WaitSeatCom)
         const waitSeatComB = this.waitSeatB.getComponent(WaitSeatCom)
         const waitSeatComC = this.waitSeatC.getComponent(WaitSeatCom)
@@ -49,33 +44,52 @@ export class RoomScene extends Component {
         this.playerSeatMap.set(3, "C")
         this.playerSeatMap.set(4, "D")
     }
-    getQueryParams(): URLSearchParams {
-        // 获取 ? 后面的部分，例如 "?userId=123&lang=zh"
-        const search = window.location.search;
-        return new URLSearchParams(search);
-    }
     start() {
+        this.playerID = 1
+        this.identifier = "user-1"
+        log("set room id",NetworkManager.instance)
+        NetworkManager.instance.setRoomID(1)
+        log("after set room id")
+
+        const roomNameLabel = this.roomName.getComponent(Label)
+        roomNameLabel.string = "Room No [" + NetworkManager.instance.getRoomID() + "]"
+        log("RoomScene.onLoad.1")
         EventGo.on("server-message-room", (data: Commands.BasePayload) => {
             log("server-message-room", data)
             this.onAction(data)
         })
         this.doEnter()
     }
+    getQueryParams(): URLSearchParams {
+        // 获取 ? 后面的部分，例如 "?userId=123&lang=zh"
+        const search = window.location.search;
+        return new URLSearchParams(search);
+    }
+    
 
     onAction(basePayload: Commands.BasePayload) {
+        log(basePayload)
         switch (basePayload.commandAction) {
             case Commands.CommandAction.OnCmdServerRoomInfo:
-                const payload = JSON.parse(basePayload.data) as Commands.CmdServerRoomInfo;
-                this.players = payload.players
-                this.updateRoom()
+                (()=>{
+                    log("data",basePayload.data)
+                    const payload = JSON.parse(basePayload.data) as Commands.CmdServerRoomInfo;
+                    this.players = payload.players
+                    log("players",payload.players)
+                    this.updateRoom()
+                })();
                 break;
             case Commands.CommandAction.OnCmdServerToStart:
-                const player = this.players.filter(f => f.identifier == this.identifier)
-                NetworkManager.instance.setPlayer(player[0])
-                director.loadScene("GameScene")
+                (()=>{
+                    const payload = JSON.parse(basePayload.data) as Commands.CmdServerToStart;
+                    const player = this.players.filter(f => f.identifier == this.identifier)
+                    NetworkManager.instance.setPlayer(player[0])
+                    NetworkManager.instance.setGameID(payload.gameID)
+                    director.loadScene("game")
+                })();
                 break;
             case Commands.CommandAction.OnCmdServerEnterFail:
-                this.onLeave()
+                //this.onLeave()
                 break;
 
         }
@@ -88,15 +102,14 @@ export class RoomScene extends Component {
 
     doEnter() {
         const payload: Commands.CmdClientEnterRoom = {
-            identifier: this.identifier,
-            roomID: this.roomID
         }
-        const basePayload: Commands.BasePayload = {
+        const basePayload: Commands.ClientBasePayload = {
             commandAction: Commands.CommandAction.OnCmdClientEnterRoom,
-            commandSubAction: 1,
             data: JSON.stringify(payload),
-            target: ""
+            roomID: NetworkManager.instance.getRoomID(),
+            gameID: ""
         }
+        log("doEnter")
         EventGo.emit("client-message", basePayload)
 
 
@@ -107,7 +120,9 @@ export class RoomScene extends Component {
             const player = this.players[i];
             const seat = this.playerSeatMap.get(player.playerID)
             const com = this.waitSeatMap.get(seat)
-            com.setPlayer(this.playerID == player.playerID, this.roomID, player)
+            com.setRoomID(NetworkManager.instance.getRoomID())
+            com.setPlayer(this.playerID == player.playerID, 
+                NetworkManager.instance.getRoomID(), player)
         }
     }
 
